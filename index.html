@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Predictive Analytics | Mantenimiento Biomédico</title>
+    <!-- Google Fonts & Font Awesome Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Chart.js CDN para gráficos profesionales -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="design.css">
+</head>
+<body>
+<div class="dashboard-container">
+    <div class="header">
+        <div class="title-section">
+            <h1><i class="fas fa-microscope" style="color:#2c9c8c; margin-right: 8px;"></i> MedAnalytics Predict</h1>
+            <p>Análisis predictivo de fallas · Mantenimiento proactivo de equipos biomédicos</p>
+        </div>
+        <div class="badge-area">
+            <i class="fas fa-brain"></i> IA predictiva activa | Baseline ML
+        </div>
+    </div>
+
+    <!-- KPIs dinámicos -->
+    <div class="kpi-grid" id="kpiContainer">
+        <!-- Los KPIs se actualizarán con JS -->
+    </div>
+
+    <!-- Barra de filtros + simulación de predicción -->
+    <div class="filters-bar">
+        <div class="filter-group">
+            <i class="fas fa-calendar-alt"></i>
+            <label>Horizonte predicción:</label>
+            <select id="horizonSelect">
+                <option value="7">7 días</option>
+                <option value="14" selected>14 días</option>
+                <option value="30">30 días</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <i class="fas fa-chart-line"></i>
+            <label>Modelo:</label>
+            <select id="modelSelect">
+                <option value="xgboost">XGBoost (Fiabilidad)</option>
+                <option value="lstm" selected>LSTM - Tendencia temporal</option>
+                <option value="randomforest">Random Forest</option>
+            </select>
+        </div>
+        <button class="btn-predict" id="refreshPredictBtn"><i class="fas fa-chart-simple"></i> Ejecutar análisis predictivo</button>
+    </div>
+
+    <!-- Sección de gráficos -->
+    <div class="two-columns">
+        <div class="chart-card">
+            <div class="card-title"><i class="fas fa-chart-line icon-med"></i> Pronóstico de fallas (próximos días)</div>
+            <canvas id="forecastChart" width="400" height="250" style="max-height: 260px;"></canvas>
+            <div style="font-size: 0.7rem; margin-top: 12px; color:#4a6a85"><i class="fas fa-info-circle"></i> Estimación de eventos de mantenimiento correctivo esperados</div>
+        </div>
+        <div class="chart-card">
+            <div class="card-title"><i class="fas fa-chart-pie icon-med"></i> Riesgo por tipo de equipo</div>
+            <canvas id="riskPieChart" width="400" height="250" style="max-height: 260px;"></canvas>
+            <div style="font-size: 0.7rem; margin-top: 12px;">Distribución de criticidad predictiva (alto riesgo = prioridad mantenimiento)</div>
+        </div>
+    </div>
+
+    <!-- Tabla de equipos con riesgo predictivo -->
+    <div class="card-title" style="margin-top: 12px;"><i class="fas fa-tools"></i> Equipos biomédicos con mayor índice de falla pronosticado</div>
+    <div class="table-wrapper">
+        <table class="data-table" id="equipmentTable">
+            <thead>
+                <tr><th>Equipo</th><th>Modelo / Área</th><th>Horas uso (mes)</th><th>Índice falla (0-100)</th><th>Riesgo predictivo</th><th>Acción sugerida</th></tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Datos dinámicos -->
+            </tbody>
+        </table>
+    </div>
+    <div class="footer-note">
+        <i class="fas fa-robot"></i> Simulación predictiva basada en tendencias históricas y mantenimiento reactivo. Los datos se actualizan con modelo LSTM sintético.
+    </div>
+</div>
+
+<script>
+    // ---------- DATOS BASE DE EQUIPOS BIOMÉDICOS ----------
+    const equipmentMaster = [
+        { id: 1, nombre: "Ventilador Pulmonar", modelo: "Vela V300", area: "UTI", horasUsoBase: 342, riesgoBase: 72 },
+        { id: 2, nombre: "Monitor de Signos", modelo: "IntelliVue MX450", area: "Emergencia", horasUsoBase: 580, riesgoBase: 48 },
+        { id: 3, nombre: "Electrocardiógrafo", modelo: "PageWriter TC30", area: "Cardiología", horasUsoBase: 290, riesgoBase: 35 },
+        { id: 4, nombre: "Desfibrilador", modelo: "LIFEPAK 20e", area: "Reanimación", horasUsoBase: 210, riesgoBase: 84 },
+        { id: 5, nombre: "Bomba de Infusión", modelo: "Alaris GH", area: "Hospitalización", horasUsoBase: 650, riesgoBase: 91 },
+        { id: 6, nombre: "Resonador MRI", modelo: "SIGNA Creator", area: "Imagenología", horasUsoBase: 410, riesgoBase: 67 },
+        { id: 7, nombre: "Analizador Hematológico", modelo: "XN 1000", area: "Laboratorio", horasUsoBase: 510, riesgoBase: 55 },
+        { id: 8, nombre: "Ecógrafo portátil", modelo: "Vscan Air", area: "Diagnóstico", horasUsoBase: 180, riesgoBase: 29 }
+    ];
+
+    // Función que simula un modelo predictivo actualizando índices de falla según horizonte y modelo seleccionado
+    // Aplica desviaciones aleatorias pero manteniendo tendencia lógica y coherente con historial.
+    function updatePredictiveMetrics(horizonDays, modelType) {
+        // Genera nuevos índices de falla para cada equipo basado en riesgoBase + horizonte + modelo
+        // Cuanto mayor horizonte, mayor incertidumbre y ligero aumento, y modelo altera patrones.
+        let updatedEquipments = equipmentMaster.map(equip => {
+            let baseRisk = equip.riesgoBase;
+            // factor horizon: más días => incremento no lineal (simula degradación)
+            let horizonFactor = (horizonDays / 14) * 1.2;  // 14 días -> factor 1.2, 7d -> 0.6, 30d -> 2.57
+            let increment = (baseRisk / 100) * horizonFactor * 12;
+            let rawRisk = baseRisk + increment;
+            // modelo específico: ligeras modificaciones
+            if (modelType === 'xgboost') {
+                rawRisk += (equip.id % 3 === 0 ? 2.5 : -1.2);
+            } else if (modelType === 'randomforest') {
+                rawRisk += (equip.id % 2 === 0 ? 3.0 : -1.8);
+            } else { // lstm: tendencia temporal más suave pero con ruido dinámico
+                rawRisk += (Math.sin(equip.id) * 2.5);
+            }
+            // ruido aleatorio controlado (±5) para simular variabilidad realista
+            let noise = (Math.random() * 8) - 4;
+            let finalRisk = Math.min(99, Math.max(5, rawRisk + noise));
+            finalRisk = Math.round(finalRisk * 10) / 10;
+            // horas de uso mensual simuladas: ligeras variaciones
+            let usoVariado = equip.horasUsoBase + Math.floor((Math.random() * 40) - 20);
+            usoVariado = Math.max(50, usoVariado);
+            return {
+                ...equip,
+                riesgoPredictivo: finalRisk,
+                horasUsoDinamico: usoVariado,
+                // sugerencia de acción según nivel de riesgo
+                accion: finalRisk >= 75 ? "Mantenimiento urgente programado" : (finalRisk >= 45 ? "Inspección en 7 días" : "Monitoreo rutinario")
+            };
+        });
+        // Ordenar por riesgo descendente para tabla
+        updatedEquipments.sort((a,b) => b.riesgoPredictivo - a.riesgoPredictivo);
+        return updatedEquipments;
+    }
+
+    // Calcular KPIs globales: total equipos, promedio riesgo, equipos críticos (>=75), fallas esperadas próximas
+    function computeKPIs(equipments, horizonDays) {
+        const totalEquipos = equipments.length;
+        const avgRisk = equipments.reduce((sum, eq) => sum + eq.riesgoPredictivo, 0) / totalEquipos;
+        const criticalCount = equipments.filter(eq => eq.riesgoPredictivo >= 75).length;
+        // estimación de fallas esperadas en horizonte: relación riesgo/horizonte
+        let expectedFaults = equipments.reduce((acc, eq) => {
+            let prob = eq.riesgoPredictivo / 100;
+            let scaled = prob * (horizonDays / 14) * 1.6;
+            return acc + Math.min(2.2, scaled);
+        }, 0);
+        expectedFaults = Math.round(expectedFaults * 10) / 10;
+        return { totalEquipos, avgRisk: avgRisk.toFixed(1), criticalCount, expectedFaults };
+    }
+
+    // Renderizar KPIs en HTML
+    function renderKPIs(kpis, horizonDays) {
+        const container = document.getElementById('kpiContainer');
+        container.innerHTML = `
+            <div class="card-kpi"><div class="kpi-title"><i class="fas fa-microscope"></i> Equipos monitoreados</div><div class="kpi-value">${kpis.totalEquipos}</div><div class="kpi-trend"><i class="fas fa-check-circle"></i> Inventario biomédico</div></div>
+            <div class="card-kpi"><div class="kpi-title"><i class="fas fa-chart-line"></i> Índice de riesgo promedio</div><div class="kpi-value">${kpis.avgRisk} <span style="font-size:1rem;">/100</span></div><div class="kpi-trend ${kpis.avgRisk > 55 ? 'trend-warning' : 'trend-up'}"><i class="fas fa-exclamation-triangle"></i> Nivel preventivo</div></div>
+            <div class="card-kpi"><div class="kpi-title"><i class="fas fa-exclamation-circle"></i> Equipos críticos</div><div class="kpi-value">${kpis.criticalCount}</div><div class="kpi-trend trend-critical"><i class="fas fa-bolt"></i> Riesgo alto >75 pts</div></div>
+            <div class="card-kpi"><div class="kpi-title"><i class="fas fa-clock"></i> Fallas esperadas (${horizonDays}d)</div><div class="kpi-value">${kpis.expectedFaults}</div><div class="kpi-trend"><i class="fas fa-chart-simple"></i> Eventos de mantenimiento</div></div>
+        `;
+    }
+
+    // Renderizar tabla de equipos
+    function renderTable(equipments) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        equipments.forEach(eq => {
+            const riskClass = eq.riesgoPredictivo >= 75 ? 'risk-high' : '';
+            let statusText = eq.riesgoPredictivo >= 75 ? 'Crítico' : (eq.riesgoPredictivo >= 45 ? 'Moderado' : 'Bajo');
+            let statusSpanClass = eq.riesgoPredictivo >= 75 ? 'status-alto' : (eq.riesgoPredictivo >= 45 ? 'status-medio' : 'status-bajo');
+            const row = `<tr class="${riskClass}">
+                <td><strong>${eq.nombre}</strong></td>
+                <td>${eq.modelo} / ${eq.area}</td>
+                <td>${eq.horasUsoDinamico} h</td>
+                <td>${eq.riesgoPredictivo} %</td>
+                <td><span class="status-badge ${statusSpanClass}">${statusText}</span></td>
+                <td><i class="fas fa-wrench"></i> ${eq.accion}</td>
+            </tr>`;
+            tbody.insertAdjacentHTML('beforeend', row);
+        });
+    }
+
+    // Datos para gráfico de pronóstico (últimos días históricos + predicción)
+    let forecastChartInstance = null;
+    let riskPieInstance = null;
+
+    function updateCharts(equipments, horizonDays, modelType) {
+        // 1. Gráfico de línea: pronóstico de fallas por día durante horizonte (número esperado de eventos de falla)
+        // Simulamos una proyección usando promedio de riesgo y crecimiento exponencial moderado.
+        const avgRiskGlobal = equipments.reduce((s, e) => s + e.riesgoPredictivo, 0) / equipments.length;
+        const baseFactor = avgRiskGlobal / 55; // baseline 55 promedio normalizado
+        const labels = [];
+        const forecastData = [];
+        for (let i = 1; i <= horizonDays; i++) {
+            let day = i;
+            let trend = baseFactor * (1 + (day / horizonDays) * 0.45);
+            let dailyFaults = Math.max(0.2, (avgRiskGlobal / 40) * trend * (modelType === 'lstm' ? 1.05 : 0.98));
+            let val = Number((dailyFaults + (Math.random() * 0.3)).toFixed(1));
+            forecastData.push(val);
+            labels.push(`Día ${day}`);
+        }
+        
+        if (forecastChartInstance) forecastChartInstance.destroy();
+        const ctx = document.getElementById('forecastChart').getContext('2d');
+        forecastChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Eventos de falla estimados',
+                    data: forecastData,
+                    borderColor: '#2c9c8c',
+                    backgroundColor: 'rgba(44, 156, 140, 0.08)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.3,
+                    pointBackgroundColor: '#1b6d6d',
+                    pointBorderColor: 'white',
+                    pointRadius: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.raw} fallas estimadas` } } }
+            }
+        });
+
+        // 2. Gráfico de torta: distribución de riesgo por categoría de equipo (agrupar por área o por rango)
+        const riesgoAlto = equipments.filter(e => e.riesgoPredictivo >= 75).length;
+        const riesgoMedio = equipments.filter(e => e.riesgoPredictivo >= 45 && e.riesgoPredictivo < 75).length;
+        const riesgoBajo = equipments.filter(e => e.riesgoPredictivo < 45).length;
+        
+        if (riskPieInstance) riskPieInstance.destroy();
+        const pieCtx = document.getElementById('riskPieChart').getContext('2d');
+        riskPieInstance = new Chart(pieCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Riesgo Alto (>75)', 'Riesgo Medio (45-75)', 'Riesgo Bajo (<45)'],
+                datasets: [{
+                    data: [riesgoAlto, riesgoMedio, riesgoBajo],
+                    backgroundColor: ['#bc3f2e', '#f0a35e', '#58b09c'],
+                    borderWidth: 0,
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw} equipos (${((ctx.raw/equipments.length)*100).toFixed(0)}%)` } } }
+            }
+        });
+    }
+
+    // Función principal refresh (captura valores de filtros, actualiza todo)
+    function refreshDashboard() {
+        const horizon = parseInt(document.getElementById('horizonSelect').value, 10);
+        const model = document.getElementById('modelSelect').value;
+        // Obtener equipos con métricas actualizadas
+        const updatedEquipmentList = updatePredictiveMetrics(horizon, model);
+        // KPIs
+        const kpis = computeKPIs(updatedEquipmentList, horizon);
+        renderKPIs(kpis, horizon);
+        renderTable(updatedEquipmentList);
+        updateCharts(updatedEquipmentList, horizon, model);
+        // Guardar en algún lugar para referencia
+        window.currentEquipments = updatedEquipmentList;
+    }
+
+    // Evento inicial y botón
+    document.getElementById('refreshPredictBtn').addEventListener('click', () => {
+        refreshDashboard();
+        // Pequeña animación sutil
+        const btn = document.getElementById('refreshPredictBtn');
+        btn.style.transform = 'scale(0.96)';
+        setTimeout(() => { btn.style.transform = ''; }, 150);
+    });
+    
+    // También actualizar cuando cambie horizonte o modelo (opcional, pero dejamos solo botón para mayor control)
+    // sin embargo, para buena experiencia, se puede llamar al cargar la página y con botón manual
+    window.addEventListener('load', () => {
+        refreshDashboard();
+    });
+</script>
+</body>
+</html>

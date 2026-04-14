@@ -1,0 +1,248 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: #f0f4f8;
+    color: #1a2c3e;
+    padding: 24px 32px;
+}
+
+/* Layout principal */
+.dashboard-container {
+    max-width: 1440px;
+    margin: 0 auto;
+}
+
+/* Header */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+.title-section h1 {
+    font-size: 1.9rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #0b3b5f, #1b7e7e);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    letter-spacing: -0.3px;
+}
+.title-section p {
+    color: #4a627a;
+    font-weight: 500;
+    margin-top: 6px;
+    font-size: 0.9rem;
+}
+.badge-area {
+    background: white;
+    padding: 8px 20px;
+    border-radius: 60px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #1e6f5c;
+}
+.badge-area i {
+    margin-right: 8px;
+    color: #2c9c8c;
+}
+
+/* KPI Cards */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 22px;
+    margin-bottom: 32px;
+}
+.card-kpi {
+    background: white;
+    border-radius: 28px;
+    padding: 20px 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.03), 0 2px 4px rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
+    border: 1px solid rgba(0,0,0,0.03);
+}
+.card-kpi:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 20px 25px -12px rgba(0,0,0,0.1);
+}
+.kpi-title {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    color: #5c6f87;
+    margin-bottom: 12px;
+}
+.kpi-value {
+    font-size: 2.3rem;
+    font-weight: 800;
+    color: #0f3b3b;
+    line-height: 1.2;
+}
+.kpi-trend {
+    font-size: 0.75rem;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #3e6b5e;
+}
+.trend-up { color: #2c7a4d; }
+.trend-warning { color: #c96f0e; }
+.trend-critical { color: #bc3f2e; }
+
+/* Filtros y acciones */
+.filters-bar {
+    background: white;
+    border-radius: 24px;
+    padding: 16px 24px;
+    margin-bottom: 30px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+    border: 1px solid #e9edf2;
+}
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #f8fafd;
+    padding: 5px 15px;
+    border-radius: 60px;
+}
+.filter-group label {
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: #2c4b6b;
+}
+select, .filter-group input {
+    background: white;
+    border: 1px solid #cfdfed;
+    padding: 8px 12px;
+    border-radius: 40px;
+    font-family: 'Inter', monospace;
+    font-size: 0.8rem;
+    outline: none;
+    transition: 0.2s;
+}
+select:focus, .filter-group input:focus {
+    border-color: #2c9c8c;
+}
+.btn-predict {
+    background: #1b6d6d;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 40px;
+    color: white;
+    font-weight: 600;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.btn-predict:hover {
+    background: #0e5454;
+    transform: scale(0.98);
+}
+
+/* Gráficos y tabla */
+.two-columns {
+    display: grid;
+    grid-template-columns: 1fr 1.1fr;
+    gap: 28px;
+    margin-bottom: 32px;
+}
+.chart-card {
+    background: white;
+    border-radius: 28px;
+    padding: 18px 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.02);
+    border: 1px solid #eef2f8;
+}
+.card-title {
+    font-weight: 700;
+    font-size: 1.2rem;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-left: 4px solid #2c9c8c;
+    padding-left: 14px;
+}
+canvas {
+    max-height: 280px;
+    width: 100%;
+}
+
+/* Tabla de equipos críticos */
+.table-wrapper {
+    background: white;
+    border-radius: 28px;
+    padding: 8px 0;
+    overflow-x: auto;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.02);
+    border: 1px solid #eef2f8;
+}
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+.data-table th {
+    text-align: left;
+    padding: 18px 16px;
+    background: #f9fbfe;
+    font-weight: 600;
+    color: #2a4d69;
+}
+.data-table td {
+    padding: 14px 16px;
+    border-top: 1px solid #ecf3f9;
+    font-weight: 500;
+}
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 40px;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+.status-alto { background: #fee2e2; color: #b91c1c; }
+.status-medio { background: #fff0db; color: #b45309; }
+.status-bajo { background: #e0f2e9; color: #1e6f5c; }
+
+.risk-high {
+    background: #fff0f0;
+    font-weight: 700;
+    color: #bc3f2e;
+}
+.footer-note {
+    margin-top: 28px;
+    text-align: center;
+    font-size: 0.7rem;
+    color: #6c86a3;
+    border-top: 1px solid #dce5ef;
+    padding-top: 20px;
+}
+@media (max-width: 780px) {
+    body { padding: 16px; }
+    .two-columns { grid-template-columns: 1fr; }
+}
+i.icon-med {
+    color: #2c9c8c;
+}
